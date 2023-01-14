@@ -2,6 +2,7 @@ import { Sequelize } from 'sequelize-typescript';
 import { models } from '../database.models.js';
 import { readdirSync } from 'fs';
 import { join } from 'path';
+import {env} from 'src/_common/utils/env'
 
 export interface ISeedArgs {
   truncate: boolean;
@@ -14,11 +15,11 @@ async function Seed() {
   // Connect to db
   new Sequelize({
     dialect: 'postgres',
-    host: process.env.DB_HOST,
-    port: Number(process.env.DB_PORT),
-    username: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: process.env.DB_NAME,
+    host: env.DB_HOST,
+    port: Number(env.DB_PORT),
+    username: env.DB_USER,
+    password: env.DB_PASS,
+    database: env.DB_NAME,
     logging: false,
     models
   });
