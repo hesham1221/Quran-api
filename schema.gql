@@ -1,0 +1,105 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type User {
+  id: ID!
+  email: String
+  notVerifiedEmail: String
+}
+
+type PageInfo {
+  page: Int
+  limit: Int!
+  nextCursor: String
+  beforeCursor: String
+  hasNext: Boolean!
+  hasBefore: Boolean!
+}
+
+type Surah {
+  id: ID!
+  name: String!
+  number: Int!
+  enName: String!
+  enTranslation: String!
+  revelationType: String!
+  ayahs: [Ayah!]
+}
+
+type Ayah {
+  id: ID!
+  enTranslation: String!
+  text: String!
+  numberInSurah: Int!
+  number: Int!
+  juz: Int!
+  manzil: Int!
+  page: Int!
+  ruku: Int!
+  hizbQuarter: Int!
+  sajda: JSON!
+  surah: Surah!
+}
+
+type GqlSurahResponse {
+  data: Surah
+  code: Int!
+  success: Boolean!
+  message: String
+}
+
+type GqlSurahsArrayResponse {
+  data: [Surah]
+  code: Int!
+  success: Boolean!
+  message: String
+}
+
+type GqlAyahResponse {
+  data: Ayah
+  code: Int!
+  success: Boolean!
+  message: String
+}
+
+type GqlAyahsPagination {
+  items: [Ayah]
+  pageInfo: PageInfo!
+}
+
+type GqlAyahsResponse {
+  data: GqlAyahsPagination
+  code: Int!
+  success: Boolean!
+  message: String
+}
+
+scalar Timestamp
+
+scalar JSON
+
+type Query {
+  user(id: Int!): User!
+  ayahs: GqlAyahsResponse!
+  ayah(id: String!): GqlAyahResponse!
+  surahs: GqlSurahsArrayResponse!
+  surah(id: String!): GqlSurahResponse!
+}
+
+type Mutation {
+  createUser(createUserInput: CreateUserInput!): User!
+  updateUser(updateUserInput: UpdateUserInput!): User!
+  removeUser(id: Int!): User!
+}
+
+input CreateUserInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateUserInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}

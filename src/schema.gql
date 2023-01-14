@@ -1,0 +1,59 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type User {
+  id: ID!
+  email: String
+  notVerifiedEmail: String
+}
+
+type Surah {
+  id: ID!
+  name: String!
+  number: Int!
+  enName: String!
+  enTranslation: String!
+  revelationType: String!
+  ayahs: [Ayah!]
+}
+
+type Ayah {
+  id: ID!
+  enTranslation: String!
+  text: String!
+  numberInSurah: Int!
+  number: Int!
+  juz: Int!
+  manzil: Int!
+  page: Int!
+  ruku: Int!
+  hizbQuarter: Int!
+  sajda: Boolean!
+  surah: Surah!
+}
+
+type Query {
+  user(id: Int!): User!
+  surahs: [Surah!]!
+  surah(id: String!): Surah!
+  ayahs: [Ayah!]!
+  ayah(id: String!): Ayah!
+}
+
+type Mutation {
+  createUser(createUserInput: CreateUserInput!): User!
+  updateUser(updateUserInput: UpdateUserInput!): User!
+  removeUser(id: Int!): User!
+}
+
+input CreateUserInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateUserInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
