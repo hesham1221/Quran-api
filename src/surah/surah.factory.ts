@@ -13,7 +13,7 @@ export const surahsFactory = async (surahs: SurahType[]) => {
     ayahs.push(surah.ayahs);
   });
   const newSurahs = surahs.map(({ ayahs, ...surah }) => ({ ...surah }));
-  const oldData = surrahRepo.findOne({number : 1})
+  const oldData = await surrahRepo.findOne({number : 114}) // surahs number === 114 if 114 surah is there then return
   if(oldData) return
   const createdSurrahs = await surrahRepo.bulkCreate(newSurahs);
   const ayahsWithSurahId: AyahType[] = [];
@@ -21,7 +21,7 @@ export const surahsFactory = async (surahs: SurahType[]) => {
     ayahs[i].forEach(({ sajda, ...ayah }) => {
       ayahsWithSurahId.push({
         ...ayah,
-        sajda: sajda === false ? { id: 0 } : sajda,
+        sajda: sajda === false ? { id: 0 , recommended : false , obligatory : false } : sajda,
         surahId: surrah.id,
       });
     });

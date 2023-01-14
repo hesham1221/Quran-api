@@ -10,7 +10,8 @@ import {
   Table,
 } from 'sequelize-typescript';
 import { Surah } from 'src/surah/models/surah.model';
-import { JSON } from 'src/_common/graphql/json.scalar';
+import { paginate } from 'src/_common/paginator/paginator.service';
+import { Sajda } from '../types/ayah.type';
 
 @Table
 @ObjectType()
@@ -58,14 +59,18 @@ export class Ayah extends Model {
   hizbQuarter: number;
 
   @Column({type : DataType.JSON})
-  @Field(() => JSON)
-  sajda: JSON;
+  @Field(() => Sajda)
+  sajda: Sajda;
 
   @ForeignKey(() => Surah)
   @Column({type : DataType.UUID})
   surahId: string;
 
   @BelongsTo(() => Surah)
-  @Field(() => Surah)
+  // @Field(() => Surah)
   surah: Surah;
+
+  static async paginate(filter = {}, sort = 'number', page = 0, limit = 15, include: any = []) {
+    return paginate<Ayah>(this, filter, sort, page, limit, include);
+  }
 }

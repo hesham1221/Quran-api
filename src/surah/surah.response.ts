@@ -2,4 +2,4 @@ import { generateGqlResponseType } from 'src/_common/graphql/graphql-response.ty
 import { Surah } from "./models/surah.model";
 
 export const GqlSurahResponse = generateGqlResponseType(Surah)
-export const GqlSurahsResponse = generateGqlResponseType(Array(Surah) , true)
+export const GqlSurahsResponse = generateGqlResponseType(Array(Surah))

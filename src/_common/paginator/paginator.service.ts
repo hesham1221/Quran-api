@@ -1,6 +1,7 @@
 import {
   CursorBasedPaginationArgsType,
   CursorBasedPaginationDirection,
+  CursorBasedSortType,
   PaginationRes
 } from './paginator.types';
 import { MyModelStatic } from '../database/database.static-model';
@@ -9,24 +10,52 @@ import { Literal } from 'sequelize/types/utils';
 
 // Need to be refactored
 
+// ^ before (regardless of sort)
+// v after  (regardless of sort)
+// default sort is DESC
+// items will include cursor regardless of sort or direction
+
 export const cursorPaginate = async <T>(
   args: CursorBasedPaginationArgsType
 ): Promise<PaginationRes<T>> => {
   let dateCursor = args.cursor && new Date(Number(args.cursor)),
+    sort = args.sort || CursorBasedSortType.DESC,
     sequelizeOperator = args.direction === CursorBasedPaginationDirection.AFTER ? Op.lte : Op.gte,
-    orderDirection = args.direction === CursorBasedPaginationDirection.AFTER ? 'DESC' : 'ASC';
+    sequelizeOperatorForSingle =
+      args.direction === CursorBasedPaginationDirection.AFTER ? Op.gt : Op.lt,
+    realOrder =
+      args.direction === CursorBasedPaginationDirection.AFTER
+        ? CursorBasedSortType.DESC
+        : CursorBasedSortType.ASC, // + reverse
+    realOrderForSingle =
+      args.direction === CursorBasedPaginationDirection.AFTER
+        ? CursorBasedSortType.ASC
+        : CursorBasedSortType.DESC;
 
-  const items = await args.model.findAll({
+  if (sort === CursorBasedSortType.ASC) {
+    sequelizeOperator = args.direction === CursorBasedPaginationDirection.AFTER ? Op.gte : Op.lte;
+    sequelizeOperatorForSingle =
+      args.direction === CursorBasedPaginationDirection.AFTER ? Op.lt : Op.gt;
+    realOrder =
+      args.direction === CursorBasedPaginationDirection.AFTER
+        ? CursorBasedSortType.ASC
+        : CursorBasedSortType.DESC; // + reverse
+    realOrderForSingle =
+      args.direction === CursorBasedPaginationDirection.AFTER
+        ? CursorBasedSortType.DESC
+        : CursorBasedSortType.ASC;
+  }
+
+  let items = await args.model.findAll({
     where: {
       ...args.filter,
       ...(dateCursor && { createdAt: { [sequelizeOperator]: new Date(dateCursor) } })
     },
-    order: [['createdAt', orderDirection]],
+    order: [['createdAt', realOrder]],
     limit: args.limit + 1,
     include: args.include,
     nest: true,
-    raw: true,
-    logging: true
+    raw: true
   });
 
   let hasNext = items.length === args.limit + 1,
@@ -44,53 +73,41 @@ export const cursorPaginate = async <T>(
 
   if (!dateCursor) dateCursor = new Date(items[0].createdAt);
 
+  const item = await args.model.findOne({
+    where: {
+      ...args.filter,
+      ...(dateCursor && { createdAt: { [sequelizeOperatorForSingle]: new Date(dateCursor) } })
+    },
+    order: [['createdAt', realOrderForSingle]],
+    limit: 1,
+    include: args.include,
+    nest: true,
+    raw: true
+  });
+
   if (args.direction === CursorBasedPaginationDirection.BEFORE) {
-    const nextItem = await args.model.findOne({
-      where: {
-        ...args.filter,
-        ...(dateCursor && { createdAt: { [Op.lt]: new Date(dateCursor) } })
-      },
-      order: [['createdAt', 'DESC']],
-      limit: 1,
-      include: args.include,
-      nest: true,
-      raw: true,
-      attributes: ['createdAt']
-    });
-    hasNext = !!nextItem;
-    if (nextItem) {
-      nextCursorRecord = nextItem;
-      items.push(nextItem);
+    hasNext = !!item;
+    if (item) {
+      nextCursorRecord = item;
+      items.unshift(item); // not `push` because of reversing
     }
   }
 
   if (args.direction === CursorBasedPaginationDirection.AFTER) {
-    const beforeItem = await args.model.findOne({
-      where: {
-        ...args.filter,
-        ...(dateCursor && { createdAt: { [Op.gt]: new Date(dateCursor) } })
-      },
-      order: [['createdAt', 'ASC']],
-      limit: 1,
-      include: args.include,
-      nest: true,
-      raw: true,
-      attributes: ['createdAt']
-    });
-    hasBefore = !!beforeItem;
-    if (beforeItem) {
-      beforeCursorRecord = beforeItem;
-      items.unshift(beforeItem);
+    hasBefore = !!item;
+    if (item) {
+      beforeCursorRecord = item;
+      items.unshift(item);
     }
   }
 
   if (hasNext) {
     nextCursor = nextCursorRecord.createdAt.getTime().toString();
-    items.pop();
+    items = items.filter(i => i !== nextCursorRecord);
   }
   if (hasBefore) {
     beforeCursor = beforeCursorRecord.createdAt.getTime().toString();
-    items.shift();
+    items = items.filter(i => i !== beforeCursorRecord);
   }
 
   if (args.direction === CursorBasedPaginationDirection.BEFORE) items.reverse();
@@ -107,13 +124,23 @@ export const paginate = async <T>(
   sort: string | Literal = '-createdAt',
   page = 0,
   limit = 15,
-  include: any = []
+  include: any = [],
+  attributes: string[] = null,
+  isNestAndRaw = true
 ): Promise<PaginationRes<T>> => {
   let totalPages = 0,
     totalCount = 0,
     hasNext = false;
   // Using `findAll` instead of `count` because `count` generates a different SQL
-  totalCount = (await model.findAll({ where: filter, include })).length;
+  totalCount = (
+    await model.findAll({
+      where: filter,
+      include,
+      nest: isNestAndRaw,
+      raw: isNestAndRaw,
+      subQuery: false
+    })
+  ).length;
   if (limit > 50) limit = 50;
   if (limit < 0) limit = 15;
   if (page < 0) page = 0;
@@ -131,14 +158,18 @@ export const paginate = async <T>(
     limit,
     offset: skip,
     include,
-    nest: true,
-    raw: true
+    nest: isNestAndRaw,
+    raw: isNestAndRaw,
+    subQuery: false,
+    ...(attributes && { attributes })
   });
   return {
     pageInfo: {
       hasBefore: page > 1,
       page,
-      hasNext
+      hasNext,
+      totalCount,
+      totalPages
     },
     items: <any>items
   };
@@ -149,13 +180,17 @@ export const manualPaginator = <T>(
   filter = {},
   sort = '-createdAt',
   page = 0,
-  limit = 15
+  limit = 15,
+  nestedSort = []
 ): PaginationRes<T> => {
   let res = {
     pageInfo: {
       page: 0,
+      limit,
       hasNext: false,
-      hasBefore: false
+      hasBefore: false,
+      totalCount: 0,
+      totalPages: 0
     },
     items: []
   };
@@ -168,8 +203,20 @@ export const manualPaginator = <T>(
   let items = !sort
     ? array
     : sort.startsWith('-')
-    ? array.sort((a, b) => b[sortField] - a[sortField])
-    : array.sort((a, b) => a[sortField] - b[sortField]);
+    ? array.sort((a, b) => {
+        if (nestedSort.length > 0) {
+          const { nestedA, nestedB } = nestSortFields(a[sortField], b[sortField], nestedSort);
+          return nestedB - nestedA;
+        }
+        return b[sortField] - a[sortField];
+      })
+    : array.sort((a, b) => {
+        if (nestedSort.length > 0) {
+          const { nestedA, nestedB } = nestSortFields(a[sort], b[sort], nestedSort);
+          return nestedA - nestedB;
+        }
+        return a[sort] - b[sort];
+      });
   if (filter && Object.keys(filter).length) {
     items = array.filter(entity => {
       for (let i in filter) {
@@ -189,7 +236,9 @@ export const manualPaginator = <T>(
     pageInfo: {
       page,
       hasNext,
-      hasBefore: page > 1
+      hasBefore: page > 1,
+      totalCount,
+      totalPages
     },
     items
   };
@@ -223,4 +272,12 @@ export const manualPaginatorReturnsArray = <T>(
   let skip = page > 1 ? (page - 1) * limit : 0;
   items = items.slice(skip, limit + skip);
   return items;
+};
+
+const nestSortFields = (nestedA, nestedB, nestedSort) => {
+  for (let i = 0; i < nestedSort.length; i++) {
+    nestedB = nestedB[nestedSort[i]];
+    nestedA = nestedA[nestedSort[i]];
+  }
+  return { nestedA, nestedB };
 };

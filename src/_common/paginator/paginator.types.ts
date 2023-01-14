@@ -8,6 +8,11 @@ export enum CursorBasedPaginationDirection {
 }
 registerEnumType(CursorBasedPaginationDirection, { name: 'CursorBasedPaginationDirection' });
 
+export enum CursorBasedSortType {
+  ASC = 'ASC',
+  DESC = 'DESC'
+}
+registerEnumType(CursorBasedSortType, { name: 'CursorBasedSortType' });
 export interface IPaginatedFilter {
   where?: WhereOptions;
   sort?: string;
@@ -28,10 +33,13 @@ export interface PaginationRes<T> {
   items: T[];
   pageInfo: {
     page?: number;
+    limit?: number;
     nextCursor?: string;
     beforeCursor?: string;
     hasNext: boolean;
     hasBefore: boolean;
+    totalCount?: number;
+    totalPages?: number;
   };
 }
 
@@ -40,8 +48,8 @@ export abstract class PageInfo {
   @Field(type => Int, { nullable: true })
   page?: number;
 
-  @Field(type => Int)
-  limit: number;
+  @Field(type => Int, { nullable: true })
+  limit?: number;
 
   @Field({ nullable: true })
   nextCursor?: string;
@@ -54,6 +62,12 @@ export abstract class PageInfo {
 
   @Field(type => Boolean)
   hasBefore: boolean;
+
+  @Field({ nullable: true })
+  totalCount?: number;
+
+  @Field({ nullable: true })
+  totalPages?: number;
 }
 
 export interface CursorBasedPaginationArgsType {
@@ -63,4 +77,5 @@ export interface CursorBasedPaginationArgsType {
   limit: number;
   direction: CursorBasedPaginationDirection;
   include: Includeable[];
+  sort: CursorBasedSortType;
 }

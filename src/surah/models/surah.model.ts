@@ -10,9 +10,10 @@ import {
 } from 'sequelize-typescript';
 import { Ayah } from 'src/ayah/models/ayah.model';
 import { paginate } from 'src/_common/paginator/paginator.service';
+import { RevelationTypeEnum } from '../surah.enum';
 
 @Table({
-    tableName : 'Surahs'
+  tableName: 'Surahs',
 })
 @ObjectType()
 export class Surah extends Model {
@@ -39,14 +40,20 @@ export class Surah extends Model {
   enTranslation: string;
 
   @Column
-  @Field()
-  revelationType: string;
+  @Field(() => RevelationTypeEnum)
+  revelationType: RevelationTypeEnum;
 
-  @HasMany(() => Ayah , { onDelete: 'cascade'})
-  @Field(() => [Ayah],{nullable : true}) 
-  ayahs? : Ayah[]
+  @HasMany(() => Ayah, { onDelete: 'cascade' })
+  // @Field(() => [Ayah],{nullable : true})
+  ayahs?: Ayah[];
 
-  static async paginate(filter = {}, sort = '-createdAt', page = 0, limit = 15, include: any = []) {
+  static async paginate(
+    filter = {},
+    sort = 'number',
+    page = 0,
+    limit = 15,
+    include: any = [],
+  ) {
     return paginate<Surah>(this, filter, sort, page, limit, include);
   }
 }

@@ -10,11 +10,13 @@ type User {
 
 type PageInfo {
   page: Int
-  limit: Int!
+  limit: Int
   nextCursor: String
   beforeCursor: String
   hasNext: Boolean!
   hasBefore: Boolean!
+  totalCount: Float
+  totalPages: Float
 }
 
 type Surah {
@@ -23,8 +25,19 @@ type Surah {
   number: Int!
   enName: String!
   enTranslation: String!
-  revelationType: String!
-  ayahs: [Ayah!]
+  revelationType: RevelationTypeEnum!
+  surahAudio: String!
+}
+
+enum RevelationTypeEnum {
+  Meccan
+  Medinan
+}
+
+type Sajda {
+  id: Int!
+  recommended: Boolean!
+  obligatory: Boolean!
 }
 
 type Ayah {
@@ -38,8 +51,8 @@ type Ayah {
   page: Int!
   ruku: Int!
   hizbQuarter: Int!
-  sajda: JSON!
-  surah: Surah!
+  sajda: Sajda!
+  ayahAudio: String!
 }
 
 type GqlSurahResponse {
@@ -49,8 +62,13 @@ type GqlSurahResponse {
   message: String
 }
 
-type GqlSurahsArrayResponse {
-  data: [Surah]
+type GqlSurahsPagination {
+  items: [Surah]
+  pageInfo: PageInfo!
+}
+
+type GqlSurahsResponse {
+  data: GqlSurahsPagination
   code: Int!
   success: Boolean!
   message: String
@@ -81,10 +99,34 @@ scalar JSON
 
 type Query {
   user(id: Int!): User!
-  ayahs: GqlAyahsResponse!
+  ayahs(surahInfo: AyahInput!, filter: AyahFilter, paginate: PaginatorInput): GqlAyahsResponse!
   ayah(id: String!): GqlAyahResponse!
-  surahs: GqlSurahsArrayResponse!
+  surahs(filter: SurahFilter, paginate: PaginatorInput): GqlSurahsResponse!
   surah(id: String!): GqlSurahResponse!
+}
+
+input AyahInput {
+  surahId: String
+  surahNumber: Int
+}
+
+input AyahFilter {
+  searchKey: String
+  juz: Int
+  manzil: Int
+  page: Int
+  ruku: Int
+  hizbQuarter: Int
+}
+
+input PaginatorInput {
+  page: Float! = 1
+  limit: Float! = 15
+}
+
+input SurahFilter {
+  searchKey: String
+  revelationType: RevelationTypeEnum
 }
 
 type Mutation {

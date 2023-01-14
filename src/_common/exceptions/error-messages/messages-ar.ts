@@ -34,5 +34,6 @@ export const arErrorMessage: IErrorMessage = {
   STORED_PAYMENT_METHOD_NOT_EXIST: 'Stored payment method does not exist',
   CANT_DELETE_SUPER_ADMIN_GROUP: 'Super admin group should not be deleted',
   INVALID_APPOINTMENT_MESSAGE_TYPE: 'Invalid appointment message type',
-  INVALID_PHONE_NUMBER: 'رقم الهاتف غير صحيح'
+  INVALID_PHONE_NUMBER: 'رقم الهاتف غير صحيح',
+  INVALID_SURAH_INFO : 'يجب ادخال معلومات السورة',
 };
