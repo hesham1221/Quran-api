@@ -28,7 +28,7 @@ export class SurahResolver {
 
   @ResolveField(() => String)
   surahAudio(surah : Surah){
-    //todo : make it dynamic depending on user prefered reader
+    //Todo : make it dynamic depending on user prefered reader
     return `https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/${surah.number}.mp3`
   }
 }
